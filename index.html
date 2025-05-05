@@ -54,7 +54,7 @@
     align-self: center;
     color: #334155;
   }
-  input[type="number"], select, input[type="date"] {
+  input[type="text"], select, input[type="date"] {
     flex-grow: 1;
     padding: 8px 10px;
     font-size: 1rem;
@@ -62,7 +62,7 @@
     border-radius: 8px;
     transition: border-color 0.3s ease;
   }
-  input[type="number"]:focus, select:focus, input[type="date"]:focus {
+  input[type="text"]:focus, select:focus, input[type="date"]:focus {
     outline: none;
     border-color: #2563eb;
     box-shadow: 0 0 5px #3b82f6aa;
@@ -139,6 +139,20 @@
     font-size: 0.75rem;
     color: #94a3b8;
   }
+  footer a {
+    color: #94a3b8;
+    text-decoration: none;
+    display: inline-block;
+    width: 100%;
+    padding: 4px 0;
+    cursor: pointer;
+    transition: color 0.3s ease;
+  }
+  footer a:hover,
+  footer a:focus {
+    color: #2563eb;
+    outline: none;
+  }
 
   /* Scrollbar hidden for mobile aesthetics */
   ::-webkit-scrollbar {
@@ -172,7 +186,7 @@
     </div>
     <div class="row">
       <label for="amount">Jumlah (Rp)</label>
-      <input type="number" id="amount" min="0.01" step="0.01" placeholder="0,00" required />
+      <input type="text" inputmode="numeric" id="amount" placeholder="0" required />
     </div>
     <div class="row">
       <label for="date">Tanggal</label>
@@ -192,7 +206,7 @@
   </main>
 
   <footer>
-    &copy; 2024 Dashboard Keuangan
+    <a href="https://alfajrin23.github.io/personal_portofolio/" target="_blank" rel="noopener noreferrer">&copy; 2024 by Al Fajrin A A</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -214,12 +228,43 @@
 
       // Enable submit only when inputs are valid
       function validateInputs() {
-        submitBtn.disabled = !(typeInput.value && amountInput.value && parseFloat(amountInput.value) > 0 && dateInput.value);
+        // Parse amount by removing dots then check if positive number
+        const rawAmount = amountInput.value.replace(/\./g, '').replace(',', '.');
+        const amountNum = parseFloat(rawAmount);
+        submitBtn.disabled = !(typeInput.value && rawAmount && !isNaN(amountNum) && amountNum > 0 && dateInput.value);
       }
 
       typeInput.addEventListener('change', validateInputs);
-      amountInput.addEventListener('input', validateInputs);
       dateInput.addEventListener('change', validateInputs);
+
+      // Format input with thousand separators as user types
+      amountInput.addEventListener('input', (e) => {
+        let value = amountInput.value;
+
+        // Remove all non-digit and non-comma/dot
+        value = value.replace(/[^0-9,\.]/g, '');
+
+        // Replace commas with dots for consistent decimal separation
+        // But we will only allow one decimal separator which is comma in IDR formatting
+        // For simplicity, we assume that user inputs integers mostly, so decimals are not handled deeply here.
+
+        // Remove dots for conversion
+        let parts = value.split(',');
+        // parts[0] is integer part, format with thousand separator dots
+        parts[0] = parts[0].replace(/\./g, '');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
+        // Reassemble value
+        if (parts.length > 1) {
+          value = parts[0] + ',' + parts[1].slice(0,2); // limit decimal to 2
+        } else {
+          value = parts[0];
+        }
+
+        amountInput.value = value;
+
+        validateInputs();
+      });
 
       // Retrieve stored transactions or empty array
       function getTransactions() {
@@ -245,8 +290,8 @@
       }
 
       function startOfWeek(date) {
-        const day = date.getDay(); // Sun=0
-        const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday
+        const day = date.getDay();
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1);
         return new Date(date.getFullYear(), date.getMonth(), diff);
       }
 
@@ -285,7 +330,6 @@
         const dataIncome = [];
         const dataExpense = [];
 
-        // Build date range labels according to filter
         const now = new Date();
         let startDate;
 
@@ -295,13 +339,11 @@
 
         switch(filter) {
           case 'day':
-            // Show hours for the day, labels 0 to 23
             for(let h=0; h<24; h++) {
               labels.push(h + ':00');
               dataIncome[h] = 0;
               dataExpense[h] = 0;
             }
-            // Aggregate by hours
             transactions.forEach(t => {
               const tDate = new Date(t.date);
               if(dateToKey(tDate) === dateToKey(now)) {
@@ -313,7 +355,6 @@
             break;
 
           case 'week':
-            // Labels for 7 days of the week starting Monday
             const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
             for(let i=0; i<7; i++) {
               const d = new Date(startOfWeek(now).getTime() + i*24*60*60*1000);
@@ -321,11 +362,9 @@
               dataIncome[i] = 0;
               dataExpense[i] = 0;
             }
-            // Aggregate by weekday
             transactions.forEach(t => {
               const tDate = new Date(t.date);
               if(tDate >= startOfWeek(now) && tDate <= now) {
-                // get day index Monday =0 ... Sunday=6
                 let dayIndex = (tDate.getDay()+6)%7;
                 if(t.type === 'income') dataIncome[dayIndex] += t.amount;
                 else if(t.type === 'expense') dataExpense[dayIndex] += t.amount;
@@ -335,7 +374,6 @@
 
           case 'month':
           default:
-            // Show days in month
             startDate = startOfMonth(now);
             const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
             for(let i=1; i<=daysInMonth; i++) {
@@ -343,7 +381,6 @@
               dataIncome[i-1] = 0;
               dataExpense[i-1] = 0;
             }
-            // Aggregate by day number
             transactions.forEach(t => {
               const tDate = new Date(t.date);
               if(tDate >= startDate && tDate <= now) {
@@ -359,7 +396,7 @@
       // Chart instance placeholder
       let chart = null;
 
-      // Format number as IDR currency short display (e.g Rp 1.000)
+      // Format number as IDR currency short display
       function formatIDR(value) {
         return 'Rp ' + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
       }
@@ -434,7 +471,6 @@
               },
               ticks: {
                 font: { size: 12 },
-                // Use formatIDR for y-axis ticks
                 callback: function(value) {
                   return formatIDR(value);
                 }
@@ -459,25 +495,24 @@
       // Current filter state
       let currentFilter = 'day';
 
-      // UI filter button highlight
       function setActiveFilterButton(filter) {
         filterButtons.forEach(btn => {
           btn.classList.toggle('active', btn.dataset.filter === filter);
         });
       }
 
-      // Refresh dashboard graph
       function refreshDashboard() {
         const transactions = getTransactions();
         const filteredTransactions = filterTransactions(transactions, currentFilter);
         renderChart(filteredTransactions, currentFilter);
       }
 
-      // Form submit handler
       form.addEventListener('submit', e => {
         e.preventDefault();
 
-        const amount = parseFloat(amountInput.value);
+        // Parse amount input: remove dots, replace comma with dot for decimal
+        let rawAmount = amountInput.value.replace(/\./g, '').replace(',', '.');
+        const amount = parseFloat(rawAmount);
         if(isNaN(amount) || amount <= 0) return;
 
         const transaction = {
@@ -488,7 +523,7 @@
 
         addTransaction(transaction);
 
-        // Clear inputs
+        // Reset inputs
         amountInput.value = '';
         typeInput.value = '';
         dateInput.value = todayStr;
@@ -497,7 +532,6 @@
         refreshDashboard();
       });
 
-      // Filter button click handlers
       filterButtons.forEach(button => {
         button.addEventListener('click', () => {
           currentFilter = button.dataset.filter;
@@ -506,7 +540,6 @@
         });
       });
 
-      // Initialize
       function init() {
         validateInputs();
         setActiveFilterButton(currentFilter);
