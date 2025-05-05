@@ -278,6 +278,10 @@
   .btn-filter:hover {
     background: #0046b8;
   }
+  .btn-filter.cancel {
+    background: #6c757d;
+    margin-left: 6px;
+  }
 
   .history-list {
     flex: 1 1 auto;
@@ -291,22 +295,33 @@
     align-items: center;
     padding: 10px 8px;
     border-bottom: 1px solid #eee;
+    gap: 12px;
   }
   .transaction-item:last-child {
     border-bottom: none;
   }
-  .transaction-desc {
+  .transaction-desc,
+  .transaction-date {
     font-weight: 600;
     font-size: 14px;
     color: #222;
-    flex: 1 1 60%;
+    flex: 1 1 40%;
     overflow-wrap: break-word;
+    min-width: 0;
+  }
+  .transaction-date {
+    font-weight: 400;
+    font-size: 12px;
+    color: #777;
+    flex: 0 0 85px;
+    text-align: right;
   }
   .transaction-amount {
     font-weight: 700;
     font-size: 15px;
-    min-width: 90px;
+    flex: 0 0 100px;
     text-align: right;
+    min-width: 90px;
   }
   .transaction-amount.income {
     color: #209924;
@@ -314,12 +329,96 @@
   .transaction-amount.expense {
     color: #e55353;
   }
-  .transaction-date {
-    font-size: 11px;
-    color: #777;
-    margin-left: 12px;
-    min-width: 72px;
-    text-align: right;
+  .history-actions {
+    flex: 0 0 100px;
+    display: flex;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+  .history-actions button {
+    background: #007bff;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 14px;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+  }
+  .history-actions button.delete {
+    background: #e55353;
+  }
+  .history-actions button:hover {
+    filter: brightness(85%);
+  }
+  /* Editing mode inputs */
+  .edit-input {
+    font-size: 13px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1.8px solid #dde3f0;
+    width: 100%;
+  }
+  .edit-input:focus {
+    outline: none;
+    border-color: #007bff;
+  }
+  .edit-type-group {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+  }
+  .edit-type-group label {
+    font-weight: 600;
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 16px;
+    border: 1.5px solid #dde3f0;
+    cursor: pointer;
+    color: #4a90e2;
+    user-select: none;
+    flex: 1 1 50%;
+    text-align: center;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  .edit-type-group input[type="radio"] {
+    display: none;
+  }
+  .edit-type-group input[type="radio"]:checked + label {
+    background-color: #007bff;
+    color: white;
+    border-color: #0046b8;
+    box-shadow: 0 4px 8px rgb(0 123 255 / 0.4);
+  }
+  .edit-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: 8px 0 0 0;
+  }
+  .edit-buttons button {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: none;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.25s ease;
+  }
+  .edit-buttons button.save {
+    background-color: #209924;
+    color: white;
+  }
+  .edit-buttons button.save:hover {
+    background-color: #1a7e1a;
+  }
+  .edit-buttons button.cancel {
+    background-color: #6c757d;
+    color: white;
+  }
+  .edit-buttons button.cancel:hover {
+    background-color: #555c62;
   }
 
   /* Responsive for small devices */
@@ -330,8 +429,12 @@
     nav {
       font-size: 13px;
     }
-    .transaction-desc {
-      font-size: 13px;
+    .transaction-desc,
+    .transaction-date {
+      font-size: 12px;
+    }
+    .history-actions {
+      flex: 0 0 80px;
     }
   }
 
@@ -426,7 +529,7 @@
         <input type="month" id="filter-month" />
       </div>
       <button class="btn-filter" id="btn-filter-history">Terapkan Filter</button>
-      <button class="btn-filter" style="background:#6c757d; margin-left: 6px;" id="btn-clear-filter">Clear</button>
+      <button class="btn-filter cancel" id="btn-clear-filter">Clear</button>
     </div>
     <div class="history-list" tabindex="0" aria-live="polite" aria-relevant="additions removals">
       <!-- Transaction items will appear here -->
@@ -434,8 +537,9 @@
   </section>
 </div>
 <footer>
-  <a href="https://alfajrin23.github.io/personal_portofolio/" target="_blank" rel="noopener noreferrer">&copy; 2024 by Al Fajrin A A</a>
+  <a href="https://alfajrin23.github.io/personal_portofolio/" target="_blank" rel="noopener noreferrer">&copy; 2025 by Al Fajrin A A</a>
 </footer>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
 (() => {
@@ -599,7 +703,6 @@
       expenseData = Array(7).fill(0);
       filteredTransactions.forEach(tx => {
         let d = new Date(tx.date).getDay();
-        // JS getDay: Sun=0... Sat=6, so shift Sun(0)=>6; Mon(1)=>0...
         d = d === 0 ? 6 : d - 1;
         if(tx.type === 'income') incomeData[d] += tx.amount;
         else expenseData[d] += tx.amount;
@@ -677,14 +780,9 @@
   }
 
   function getWeekNumber(d) {
-    // Copy date so don't modify original
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-    // Set to nearest Thursday: current date + 4 - current day number
-    // 0=Sunday, 1=Monday, ...
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay()||7));
-    // Get first day of year
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    // Calculate full weeks to nearest Thursday
     const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1)/7);
     return weekNo;
   }
@@ -713,11 +811,9 @@
     saveTransactions();
     transactionForm.reset();
     setDefaultDate();
-    inputAmount.value = ''; // clear formatted field
+    inputAmount.value = '';
     alert("Transaksi berhasil ditambahkan!");
     updateDashboard();
-
-    // Automatically switch to History so user can see
     switchSection('history');
   });
 
@@ -728,16 +824,12 @@
 
   // Render history list with optional filter
   function renderHistoryList(filter={}) {
-    // filter may have date or month (yyyy-mm or full yyyy-mm-dd)
     let filtered = transactions;
-
     if(filter.date) {
       filtered = filtered.filter(tx => tx.date.startsWith(filter.date));
     } else if(filter.month) {
       filtered = filtered.filter(tx => tx.date.startsWith(filter.month));
     }
-
-    // Sort descending date newest first
     filtered.sort((a,b) => new Date(b.date) - new Date(a.date));
 
     if(filtered.length === 0) {
@@ -749,26 +841,213 @@
     filtered.forEach(tx => {
       const item = document.createElement('div');
       item.className = 'transaction-item';
-      // Description
-      const desc = document.createElement('div');
-      desc.className = 'transaction-desc';
-      desc.textContent = tx.description;
-      // Amount
-      const amount = document.createElement('div');
-      amount.className = 'transaction-amount ' + (tx.type === 'income' ? 'income' : 'expense');
-      amount.textContent = formatRupiah(tx.amount);
-      // Date
-      const dateDisp = document.createElement('div');
-      dateDisp.className = 'transaction-date';
-      dateDisp.textContent = formatDate(new Date(tx.date));
+      item.dataset.id = tx.id;
 
-      item.appendChild(desc);
-      item.appendChild(amount);
-      item.appendChild(dateDisp);
+      // Description
+      const descDiv = document.createElement('div');
+      descDiv.className = 'transaction-desc';
+      descDiv.textContent = tx.description;
+
+      // Amount
+      const amountDiv = document.createElement('div');
+      amountDiv.className = 'transaction-amount ' + (tx.type === 'income' ? 'income' : 'expense');
+      amountDiv.textContent = formatRupiah(tx.amount);
+
+      // Date
+      const dateDiv = document.createElement('div');
+      dateDiv.className = 'transaction-date';
+      dateDiv.textContent = formatDate(new Date(tx.date));
+
+      // Actions: Edit, Delete
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'history-actions';
+      // Edit button
+      const editBtn = document.createElement('button');
+      editBtn.textContent = 'Edit';
+      editBtn.type = 'button';
+      editBtn.addEventListener('click', () => {
+        startEditTransaction(tx.id, item);
+      });
+      // Delete button
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Hapus';
+      deleteBtn.type = 'button';
+      deleteBtn.classList.add('delete');
+      deleteBtn.addEventListener('click', () => {
+        if(confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
+          deleteTransaction(tx.id);
+        }
+      });
+
+      actionsDiv.appendChild(editBtn);
+      actionsDiv.appendChild(deleteBtn);
+
+      item.appendChild(descDiv);
+      item.appendChild(amountDiv);
+      item.appendChild(dateDiv);
+      item.appendChild(actionsDiv);
       fragment.appendChild(item);
     });
+
     historyList.innerHTML = '';
     historyList.appendChild(fragment);
+  }
+
+  // Delete transaction by id
+  function deleteTransaction(id) {
+    transactions = transactions.filter(tx => tx.id !== id);
+    saveTransactions();
+    renderHistoryList();
+    updateDashboard();
+  }
+
+  // Start editing transaction, replace item content with form fields
+  function startEditTransaction(id, itemElem) {
+    const tx = transactions.find(t => t.id === id);
+    if(!tx) return;
+
+    itemElem.innerHTML = '';
+
+    // Description input
+    const descInput = document.createElement('input');
+    descInput.type = 'text';
+    descInput.className = 'edit-input';
+    descInput.value = tx.description;
+    descInput.maxLength = 50;
+    descInput.setAttribute('aria-label', 'Keterangan');
+
+    // Amount input with formatting
+    const amountInput = document.createElement('input');
+    amountInput.type = 'text';
+    amountInput.className = 'edit-input';
+    amountInput.value = formatNumberWithDots(tx.amount);
+    amountInput.setAttribute('aria-label', 'Jumlah (Rp)');
+    amountInput.inputMode = 'numeric';
+
+    // Format as user types
+    amountInput.addEventListener('input', () => {
+      const cursorPos = amountInput.selectionStart;
+      const originalLength = amountInput.value.length;
+      let val = amountInput.value.replace(/[^0-9]/g, '');
+      if(val === '') {
+        amountInput.value = '';
+        return;
+      }
+      let formatted = formatNumberWithDots(parseInt(val));
+      amountInput.value = formatted;
+      const newLength = amountInput.value.length;
+      let newCursorPos = cursorPos + (newLength - originalLength);
+      if(newCursorPos < 0) newCursorPos = 0;
+      amountInput.setSelectionRange(newCursorPos, newCursorPos);
+    });
+
+    // Date input
+    const dateInput = document.createElement('input');
+    dateInput.type = 'date';
+    dateInput.className = 'edit-input';
+    dateInput.value = tx.date.slice(0,10);
+    dateInput.setAttribute('aria-label', 'Tanggal');
+
+    // Type input radio buttons
+    const typeGroup = document.createElement('div');
+    typeGroup.className = 'edit-type-group';
+    const incomeRadio = document.createElement('input');
+    incomeRadio.type = 'radio';
+    incomeRadio.name = 'edit-type-' + id;
+    incomeRadio.id = 'edit-income-' + id;
+    incomeRadio.value = 'income';
+    if(tx.type === 'income') incomeRadio.checked = true;
+    const incomeLabel = document.createElement('label');
+    incomeLabel.setAttribute('for', incomeRadio.id);
+    incomeLabel.textContent = 'Masuk';
+
+    const expenseRadio = document.createElement('input');
+    expenseRadio.type = 'radio';
+    expenseRadio.name = 'edit-type-' + id;
+    expenseRadio.id = 'edit-expense-' + id;
+    expenseRadio.value = 'expense';
+    if(tx.type === 'expense') expenseRadio.checked = true;
+    const expenseLabel = document.createElement('label');
+    expenseLabel.setAttribute('for', expenseRadio.id);
+    expenseLabel.textContent = 'Keluar';
+
+    typeGroup.appendChild(incomeRadio);
+    typeGroup.appendChild(incomeLabel);
+    typeGroup.appendChild(expenseRadio);
+    typeGroup.appendChild(expenseLabel);
+
+    // Buttons Save and Cancel
+    const btnContainer = document.createElement('div');
+    btnContainer.className = 'edit-buttons';
+
+    const saveBtn = document.createElement('button');
+    saveBtn.textContent = 'Simpan';
+    saveBtn.type = 'button';
+    saveBtn.className = 'save';
+    saveBtn.addEventListener('click', () => {
+      const newDesc = descInput.value.trim();
+      const newAmount = parseNumberFromRupiah(amountInput.value);
+      const newDate = dateInput.value;
+      const newType = incomeRadio.checked ? 'income' : 'expense';
+
+      if(!newDesc || newAmount <= 0 || !newDate) {
+        alert('Mohon lengkapi data transaksi dengan benar.');
+        return;
+      }
+      // Update transaction
+      const index = transactions.findIndex(t => t.id === id);
+      if(index !== -1) {
+        transactions[index] = {
+          ...transactions[index],
+          description: newDesc,
+          amount: newAmount,
+          date: newDate + "T00:00:00",
+          type: newType
+        };
+        saveTransactions();
+        renderHistoryList();
+        updateDashboard();
+      }
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.textContent = 'Batal';
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'cancel';
+    cancelBtn.addEventListener('click', () => {
+      renderHistoryList();
+    });
+
+    btnContainer.appendChild(saveBtn);
+    btnContainer.appendChild(cancelBtn);
+
+    // Layout inputs horizontally as in display: flex row
+    // We will put descInput, amountInput, dateInput and typeGroup in order, then buttons below spanning full width
+
+    const editItem = document.createElement('div');
+    editItem.style.display = 'flex';
+    editItem.style.gap = '12px';
+    editItem.style.alignItems = 'center';
+    editItem.style.flex = '1';
+
+    descInput.style.flex = '2';
+    amountInput.style.flex = '1';
+    dateInput.style.flex = '1';
+    typeGroup.style.flex = '1.2';
+
+    editItem.appendChild(descInput);
+    editItem.appendChild(amountInput);
+    editItem.appendChild(dateInput);
+    editItem.appendChild(typeGroup);
+
+    itemElem.appendChild(editItem);
+    itemElem.appendChild(btnContainer);
+  }
+
+  // Format number with thousand dots for editing amount inputs
+  function formatNumberWithDots(num) {
+    if (typeof num !== 'number') return '';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   }
 
   btnApplyFilter.addEventListener('click', () => {
@@ -789,19 +1068,18 @@
     renderHistoryList();
   });
 
-  // Amount input thousand separator formatting
+  // Amount input thousand separator formatting for new transaction form
   inputAmount.addEventListener('input', (e) => {
     let cursorPosition = inputAmount.selectionStart;
     let originalLength = inputAmount.value.length;
 
-    // Remove all non-digit and non-comma (,) characters (comma optional if user tries to input)
     let value = inputAmount.value.replace(/[^0-9]/g, '');
 
     if(value === '') {
       inputAmount.value = '';
       return;
     }
-    // Format number with thousand separators '.'
+
     let formatted = '';
     let count = 0;
     for(let i = value.length -1; i >=0; i--) {
@@ -814,12 +1092,10 @@
     }
     inputAmount.value = formatted;
 
-    // Adjust cursor position after formatting
     let newLength = inputAmount.value.length;
     cursorPosition = cursorPosition + (newLength - originalLength);
     inputAmount.setSelectionRange(cursorPosition, cursorPosition);
   });
-
 
   // Initialize
   function init() {
