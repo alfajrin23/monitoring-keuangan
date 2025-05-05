@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Dashboard Keuangan</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    background-color: #f9fafb;
+    color: #222222;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 350px;
+    height: 600px;
+    overflow: hidden;
+    padding: 12px 16px;
+  }
+  header {
+    width: 100%;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+  header h1 {
+    font-weight: 600;
+    font-size: 1.6rem;
+    color: #0f172a;
+    margin: 0;
+  }
+
+  form {
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.1);
+    padding: 12px 16px;
+    margin-bottom: 14px;
+  }
+  form .row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  label {
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-basis: 30%;
+    align-self: center;
+    color: #334155;
+  }
+  input[type="number"], select, input[type="date"] {
+    flex-grow: 1;
+    padding: 8px 10px;
+    font-size: 1rem;
+    border: 1.8px solid #cbd5e1;
+    border-radius: 8px;
+    transition: border-color 0.3s ease;
+  }
+  input[type="number"]:focus, select:focus, input[type="date"]:focus {
+    outline: none;
+    border-color: #2563eb;
+    box-shadow: 0 0 5px #3b82f6aa;
+  }
+  button {
+    width: 100%;
+    padding: 10px 0;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 10px;
+    color: white;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:disabled {
+    background-color: #94a3b8;
+    cursor: not-allowed;
+  }
+  button:hover:not(:disabled) {
+    background-color: #1d4ed8;
+  }
+
+  section.filter {
+    background: white;
+    padding: 10px 12px;
+    border-radius: 12px;
+    box-shadow: 0 3px 8px rgb(0 0 0 / 0.05);
+    margin-bottom: 14px;
+    width: 100%;
+    text-align:center;
+  }
+  section.filter button {
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin: 0 6px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+  section.filter button.active,
+  section.filter button:hover {
+    background-color: #2563eb;
+    color: white;
+    box-shadow: 0 3px 7px #2563ebaa;
+  }
+
+  #chart-container {
+    background: white;
+    flex-grow: 1;
+    width: 100%;
+    border-radius: 14px;
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.1);
+    padding: 12px 12px 20px 12px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  canvas {
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  footer {
+    margin-top: 12px;
+    width: 100%;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #94a3b8;
+  }
+
+  /* Scrollbar hidden for mobile aesthetics */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Responsive text size smaller on very narrow devices */
+  @media (max-width: 360px) {
+    header h1 {
+      font-size: 1.4rem;
+    }
+    button {
+      font-size: 0.9rem;
+    }
+  }
+</style>
+</head>
+<body>
+  <header>
+    <h1>Dashboard Keuangan</h1>
+  </header>
+
+  <form id="transaction-form" autocomplete="off">
+    <div class="row">
+      <label for="type">Tipe</label>
+      <select id="type" required>
+        <option value="">Pilih...</option>
+        <option value="income">Pemasukan +</option>
+        <option value="expense">Pengeluaran -</option>
+      </select>
+    </div>
+    <div class="row">
+      <label for="amount">Jumlah (Rp)</label>
+      <input type="number" id="amount" min="0.01" step="0.01" placeholder="0,00" required />
+    </div>
+    <div class="row">
+      <label for="date">Tanggal</label>
+      <input type="date" id="date" required />
+    </div>
+    <button type="submit" id="submit-btn" disabled>Tambah Transaksi</button>
+  </form>
+
+  <section class="filter" aria-label="Filter transaksi berdasarkan tanggal">
+    <button type="button" data-filter="day" class="active" id="filter-day">Hari</button>
+    <button type="button" data-filter="week" id="filter-week">Minggu</button>
+    <button type="button" data-filter="month" id="filter-month">Bulan</button>
+  </section>
+
+  <main id="chart-container" aria-label="Grafik dashboard keuangan">
+    <canvas id="financeChart" role="img" aria-label="Grafik yang menampilkan pemasukan dan pengeluaran"></canvas>
+  </main>
+
+  <footer>
+    &copy; 2024 Dashboard Keuangan
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function() {
+      'use strict';
+
+      const form = document.getElementById('transaction-form');
+      const typeInput = document.getElementById('type');
+      const amountInput = document.getElementById('amount');
+      const dateInput = document.getElementById('date');
+      const submitBtn = document.getElementById('submit-btn');
+      const filterButtons = document.querySelectorAll('section.filter button');
+      const ctx = document.getElementById('financeChart').getContext('2d');
+
+      // Init date input with today
+      const todayStr = new Date().toISOString().substring(0,10);
+      dateInput.value = todayStr;
+
+      // Enable submit only when inputs are valid
+      function validateInputs() {
+        submitBtn.disabled = !(typeInput.value && amountInput.value && parseFloat(amountInput.value) > 0 && dateInput.value);
+      }
+
+      typeInput.addEventListener('change', validateInputs);
+      amountInput.addEventListener('input', validateInputs);
+      dateInput.addEventListener('change', validateInputs);
+
+      // Retrieve stored transactions or empty array
+      function getTransactions() {
+        const data = localStorage.getItem('financial_transactions');
+        return data ? JSON.parse(data) : [];
+      }
+
+      // Save transactions
+      function saveTransactions(transactions) {
+        localStorage.setItem('financial_transactions', JSON.stringify(transactions));
+      }
+
+      // Add transaction to storage
+      function addTransaction(transaction) {
+        const transactions = getTransactions();
+        transactions.push(transaction);
+        saveTransactions(transactions);
+      }
+
+      // Date helpers
+      function startOfDay(date) {
+        return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+      }
+
+      function startOfWeek(date) {
+        const day = date.getDay(); // Sun=0
+        const diff = date.getDate() - day + (day === 0 ? -6 : 1); // adjust when Sunday
+        return new Date(date.getFullYear(), date.getMonth(), diff);
+      }
+
+      function startOfMonth(date) {
+        return new Date(date.getFullYear(), date.getMonth(), 1);
+      }
+
+      // Filter transactions by time unit
+      function filterTransactions(transactions, filter) {
+        const now = new Date();
+        let startDate;
+
+        switch(filter) {
+          case 'day':
+            startDate = startOfDay(now);
+            break;
+          case 'week':
+            startDate = startOfWeek(now);
+            break;
+          case 'month':
+            startDate = startOfMonth(now);
+            break;
+          default:
+            startDate = startOfMonth(now);
+        }
+
+        return transactions.filter(t => {
+          const tDate = new Date(t.date);
+          return tDate >= startDate && tDate <= now;
+        });
+      }
+
+      // Aggregate transactions by date for chart labels and values
+      function aggregateByDate(transactions, filter) {
+        const labels = [];
+        const dataIncome = [];
+        const dataExpense = [];
+
+        // Build date range labels according to filter
+        const now = new Date();
+        let startDate;
+
+        function dateToKey(d) {
+          return d.toISOString().split('T')[0];
+        }
+
+        switch(filter) {
+          case 'day':
+            // Show hours for the day, labels 0 to 23
+            for(let h=0; h<24; h++) {
+              labels.push(h + ':00');
+              dataIncome[h] = 0;
+              dataExpense[h] = 0;
+            }
+            // Aggregate by hours
+            transactions.forEach(t => {
+              const tDate = new Date(t.date);
+              if(dateToKey(tDate) === dateToKey(now)) {
+                const hour = tDate.getHours();
+                if(t.type === 'income') dataIncome[hour] += t.amount;
+                else if(t.type === 'expense') dataExpense[hour] += t.amount;
+              }
+            });
+            break;
+
+          case 'week':
+            // Labels for 7 days of the week starting Monday
+            const dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+            for(let i=0; i<7; i++) {
+              const d = new Date(startOfWeek(now).getTime() + i*24*60*60*1000);
+              labels.push(dayNames[i]);
+              dataIncome[i] = 0;
+              dataExpense[i] = 0;
+            }
+            // Aggregate by weekday
+            transactions.forEach(t => {
+              const tDate = new Date(t.date);
+              if(tDate >= startOfWeek(now) && tDate <= now) {
+                // get day index Monday =0 ... Sunday=6
+                let dayIndex = (tDate.getDay()+6)%7;
+                if(t.type === 'income') dataIncome[dayIndex] += t.amount;
+                else if(t.type === 'expense') dataExpense[dayIndex] += t.amount;
+              }
+            });
+            break;
+
+          case 'month':
+          default:
+            // Show days in month
+            startDate = startOfMonth(now);
+            const daysInMonth = new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+            for(let i=1; i<=daysInMonth; i++) {
+              labels.push(i.toString());
+              dataIncome[i-1] = 0;
+              dataExpense[i-1] = 0;
+            }
+            // Aggregate by day number
+            transactions.forEach(t => {
+              const tDate = new Date(t.date);
+              if(tDate >= startDate && tDate <= now) {
+                const d = tDate.getDate();
+                if(t.type === 'income') dataIncome[d-1] += t.amount;
+                else if(t.type === 'expense') dataExpense[d-1] += t.amount;
+              }
+            });
+        }
+        return { labels, dataIncome, dataExpense };
+      }
+
+      // Chart instance placeholder
+      let chart = null;
+
+      // Format number as IDR currency short display (e.g Rp 1.000)
+      function formatIDR(value) {
+        return 'Rp ' + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      }
+
+      // Create or update chart
+      function renderChart(filteredTransactions, filter) {
+        const { labels, dataIncome, dataExpense } = aggregateByDate(filteredTransactions, filter);
+
+        const chartData = {
+          labels,
+          datasets: [
+            {
+              label: 'Pemasukan',
+              data: dataIncome,
+              borderColor: '#16a34a',
+              backgroundColor: 'rgba(22,163,74,0.3)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              borderWidth: 2
+            },
+            {
+              label: 'Pengeluaran',
+              data: dataExpense,
+              borderColor: '#dc2626',
+              backgroundColor: 'rgba(220,38,38,0.3)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 3,
+              pointHoverRadius: 6,
+              borderWidth: 2
+            }
+          ]
+        };
+
+        const chartOptions = {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'nearest', intersect: false },
+          plugins: {
+            legend: {
+              labels: {
+                font: { size: 14, weight: '600' }
+              }
+            },
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              intersect: false,
+              callbacks: {
+                label: context => {
+                  return context.dataset.label + ': ' + formatIDR(context.parsed.y);
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: {
+                maxRotation: 0,
+                maxTicksLimit: 10,
+                font: { size: 12, weight: '600' }
+              }
+            },
+            y: {
+              beginAtZero: true,
+              grid: {
+                color: '#e2e8f0',
+                borderDash: [5, 5]
+              },
+              ticks: {
+                font: { size: 12 },
+                // Use formatIDR for y-axis ticks
+                callback: function(value) {
+                  return formatIDR(value);
+                }
+              }
+            }
+          }
+        };
+
+        if(chart) {
+          chart.data = chartData;
+          chart.options = chartOptions;
+          chart.update();
+        } else {
+          chart = new Chart(ctx, {
+            type: 'line',
+            data: chartData,
+            options: chartOptions
+          });
+        }
+      }
+
+      // Current filter state
+      let currentFilter = 'day';
+
+      // UI filter button highlight
+      function setActiveFilterButton(filter) {
+        filterButtons.forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.filter === filter);
+        });
+      }
+
+      // Refresh dashboard graph
+      function refreshDashboard() {
+        const transactions = getTransactions();
+        const filteredTransactions = filterTransactions(transactions, currentFilter);
+        renderChart(filteredTransactions, currentFilter);
+      }
+
+      // Form submit handler
+      form.addEventListener('submit', e => {
+        e.preventDefault();
+
+        const amount = parseFloat(amountInput.value);
+        if(isNaN(amount) || amount <= 0) return;
+
+        const transaction = {
+          type: typeInput.value,
+          amount: amount,
+          date: dateInput.value
+        };
+
+        addTransaction(transaction);
+
+        // Clear inputs
+        amountInput.value = '';
+        typeInput.value = '';
+        dateInput.value = todayStr;
+        submitBtn.disabled = true;
+
+        refreshDashboard();
+      });
+
+      // Filter button click handlers
+      filterButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          currentFilter = button.dataset.filter;
+          setActiveFilterButton(currentFilter);
+          refreshDashboard();
+        });
+      });
+
+      // Initialize
+      function init() {
+        validateInputs();
+        setActiveFilterButton(currentFilter);
+        refreshDashboard();
+      }
+
+      init();
+
+    })();
+  </script>
+</body>
+</html>
+
